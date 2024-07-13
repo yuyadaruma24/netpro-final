@@ -1,4 +1,5 @@
-package finalkadai;
+package botu;
+
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -14,6 +15,8 @@ import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+
+import finalkadai.TerminalInput;
 
 public class ScheduleBook extends JFrame {
     private final JPanel calendarPanel;
@@ -85,6 +88,7 @@ public class ScheduleBook extends JFrame {
         Color color = new Color(Integer.parseInt(rgb[0].trim()), Integer.parseInt(rgb[1].trim()),
                 Integer.parseInt(rgb[2].trim()));
         scheduleMap.computeIfAbsent(date, k -> new HashMap<>()).put(task, color);
+        System.out.println(color.toString());
         updateCalendar();
     }
 

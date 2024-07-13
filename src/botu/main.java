@@ -1,4 +1,4 @@
-package finalkadai;
+package botu;
 
 public class main {
     public static void main(String[] args) {

@@ -1,4 +1,4 @@
-package finalkadai;
+package botu;
 
 import java.io.Serializable;
 

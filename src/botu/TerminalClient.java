@@ -1,4 +1,5 @@
-package finalkadai;
+package botu;
+
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -6,13 +7,16 @@ import java.net.BindException;
 import java.net.Socket;
 import java.util.Scanner;
 
+import finalkadai.TerminalInput;
+
 public class TerminalClient {
 
     public static void main(String arg[]) {
         try {
             Scanner scanner = new Scanner(System.in, "Shift-JIS");
             System.out.print("ポートを入力してください(5000など) → ");
-            int port = scanner.nextInt();
+            //int port = scanner.nextInt();
+            int port = 5000;
             System.out.println("localhostの" + port + "番ポートに接続を要求します");
             Socket socket = new Socket("localhost", port);
             System.out.println("接続されました");
