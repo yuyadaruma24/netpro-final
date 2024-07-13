@@ -358,7 +358,9 @@ public class ScheduleGUIClient extends JFrame {
                     String name = input.getName();
                     String task = input.getTask();
                     String[] rgba = input.getRgba();
-                    String detail = input.detail;
+                    String detail = input.getDetail();
+                    int id = input.getCalendarID();
+                    int num = input.getCalendarNum();
 
                     if (date != null && task != null && rgba != null) {
                         Color color = new Color(Integer.parseInt(rgba[0]), Integer.parseInt(rgba[1]),
@@ -367,9 +369,13 @@ public class ScheduleGUIClient extends JFrame {
 
                         scheduleMap.computeIfAbsent(localDate, k -> new HashMap<>()).put(task, color);
                         scheduleDetails.computeIfAbsent(localDate, k -> new HashMap<>()).put(task, new String[]{name, detail});
-    
+                        scheduleID.computeIfAbsent(localDate, k -> new HashMap<>()).put(task, new int[]{id, num});
+                        taskListModel.addElement(task);
                     }
                 }
+                System.out.println("cccc");
+                updateCalendar();
+                System.out.println("ddddd");
 
                 updateCalendar();
             }

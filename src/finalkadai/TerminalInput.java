@@ -13,6 +13,9 @@ public class TerminalInput implements Serializable {
     String rgba[];
     String name;
     String detail;
+    int calendarID;
+    int calendarNum;
+    String method;
 
     public String getMessage() {
         return message;
@@ -68,5 +71,29 @@ public class TerminalInput implements Serializable {
 
     public String getDetail(){
         return detail;
+    }
+
+    public void setCalendarID(int calendarID){
+        this.calendarID = calendarID;
+    }
+
+    public int getCalendarID(){
+        return calendarID;
+    }
+
+    public void setCalendarNum(int calendarNum){
+        this.calendarNum = calendarNum;
+    }
+
+    public int getCalendarNum(){
+        return calendarNum;
+    }
+
+    public void setMethod(String method){
+        this.method = method;
+    }
+
+    public String getMethod(){
+        return method;
     }
 }

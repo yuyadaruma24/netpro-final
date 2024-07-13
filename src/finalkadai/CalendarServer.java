@@ -13,21 +13,20 @@ public class CalendarServer {
 
     public static void main(String arg[]) {
         ArrayList<TerminalInput> dataList = new ArrayList<>();
-
-        try {
-            System.out.print("ポートを入力してください(5000など) → ");
-            int port = 5000;
-            System.out.println("localhostの" + port + "番ポートで待機します");
-            ServerSocket server = new ServerSocket(port);
-
+        int calendarID = 0;
+        System.out.print("ポートを入力してください(5000など) → ");
+        int port = 5000;
+        System.out.println("localhostの" + port + "番ポートで待機します");
+        try(ServerSocket server = new ServerSocket(port);) {
             while (true) {
                 Socket socket = server.accept();
                 System.out.println("接続しました。相手の入力を待っています......");
+                calendarID++;
                 ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                oos.writeInt(calendarID);
                 clientOutputStreams.add(oos);
                 new ClientHandler(socket, dataList, oos).start();
             }
-
         } catch (BindException be) {
             be.printStackTrace();
             System.out.println("ポート番号が不正、ポートが使用中です");
@@ -65,6 +64,7 @@ public class CalendarServer {
 
         @Override
         public void run() {
+            
             try {
                 ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
                 
@@ -74,13 +74,12 @@ public class CalendarServer {
                 
                 while (true) {
                     TerminalInput input = (TerminalInput) ois.readObject();
+                    String method = input.getMethod();
+                    System.out.println("method: " + method);
                     String name = input.getName();
                     System.out.println("名前は: " + name);
                     String date = input.getDate();
                     System.out.println("日付は: " + date);
-                    if (date.equals("exit")) {
-                        break;
-                    }
                     String task = input.getTask();
                     System.out.println("内容は: " + task);
                     String detail = input.getDetail();
@@ -91,33 +90,38 @@ public class CalendarServer {
                         System.out.print(color + ",");
                     }
                     System.out.println();
+                    int ID = input.getCalendarID();
+                    int num = input.getCalendarNum();
+                    System.out.println("ID: " + ID);
+                    System.out.println("num: " + num);
 
                     synchronized (dataList) {
-                        boolean remove = false;
-                        Iterator<TerminalInput> iterator = dataList.iterator();
-                        while (iterator.hasNext()) {
-                            TerminalInput data = iterator.next();
-                            if (data.getDate().equals(date) && data.getName().equals(name) && data.getTask().equals(task) && data.getDetail().equals(detail) && Arrays.equals(data.getRgba(), rgba)) {
-                                iterator.remove();  // Iteratorを使用して要素を削除
-                                remove = true;
-                                System.out.println("削除成功");
-                                break;  // 要素を見つけて削除したのでループを終了
-                            }
-                        }
-                    
-                        if (!remove) {
+                        if (method.equals("add")) {
                             dataList.add(input);
+                        }else if(method.equals("delete")){
+                            for(int i = 0; i < dataList.size(); i++){
+                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum()) {
+                                    dataList.remove(i);
+                                }
+                            }
+                        }else if(method.equals("save") || method.equals("change")){
+                            for(int i = 0;i < dataList.size(); i++){
+                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum()) {
+                                    dataList.set(i, input);
+                                }
+                            }
+                        }else if(method.equals("exit")){
+                            break;
                         }
                     }
                     
-
                     // 新しいデータを全てのクライアントにブロードキャスト
                     broadcast(dataList);
                 }
-
-                ois.close();
-                oos.close();
-                socket.close();
+                //ois.close();
+                //oos.close();
+                //socket.close();
+                System.out.println("close");
             } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println("クライアントとの通信中にエラーが発生しました");
