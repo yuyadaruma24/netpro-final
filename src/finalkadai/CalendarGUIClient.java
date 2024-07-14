@@ -5,38 +5,27 @@ import java.awt.Color;
 import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class CalendarGUIClient extends JFrame {
     private final JPanel calendarPanel;
     private final JComboBox<String> monthComboBox;
+    private final String[] task = new String[7];
     private final Map<String, Color> taskColorMap = new HashMap<>();
     private final Map<LocalDate, Map<String, Color>> scheduleMap = new HashMap<>();
     private final Map<LocalDate, Map<String, String[]>> scheduleDetails = new HashMap<>();
@@ -187,7 +176,7 @@ public class CalendarGUIClient extends JFrame {
     private JLabel createTaskLabel(Map.Entry<String, Color> taskEntry, LocalDate date) {
         Map<String, String[]> detailsMap = scheduleDetails.computeIfAbsent(date, k -> new HashMap<>());
         Map<String, int[]> mapID = scheduleID.computeIfAbsent(date, k -> new HashMap<>());
-        String[] details = detailsMap.get(taskEntry.getKey().split("_")[0]);
+        String[] details = detailsMap.get(taskEntry.getKey());
         if (details == null) {
             details = new String[] { "不明なユーザー", "詳細なし" };
         }
@@ -217,7 +206,7 @@ public class CalendarGUIClient extends JFrame {
         String userName = null;
         String taskDetail = null;
         for (int i = 0; i < taskListModel.size(); i++) {
-            options.add(taskListModel.elementAt(i));
+            options.add(taskListModel.elementAt(i).split("_")[0]);
         }
 
         String selectedTask = (String) JOptionPane.showInputDialog(
@@ -276,10 +265,8 @@ public class CalendarGUIClient extends JFrame {
 
             if (!taskName.isEmpty() && !userName.isEmpty()) {
                 selectedTask = taskName;
-                // detailsMap.put(taskName + "_" + calendarID + "_" + calendarNum, new
-                // String[]{userName, taskDetail});
-                // mapID.put(taskName + "_" + calendarID + "_" + calendarNum, new
-                // int[]{calendarID, calendarNum});
+                detailsMap.put(taskName + "_" + calendarID + "_" + calendarNum, new String[]{userName, taskDetail});
+                mapID.put(taskName + "_" + calendarID + "_" + calendarNum, new int[]{calendarID, calendarNum});
                 Color taskColor = JColorChooser.showDialog(
                         this,
                         "カラーの選択",
@@ -290,9 +277,8 @@ public class CalendarGUIClient extends JFrame {
                 taskColor = taskColorMap.get(taskName + "_" + calendarID + "_" + calendarNum);
 
                 taskListModel.addElement(taskName);
-                // scheduleMap.computeIfAbsent(selectedDate, k -> new HashMap<>()).put(taskName
-                // + "_" + calendarID + "_" + calendarNum, taskColor);
-                // updateCalendar();
+                scheduleMap.computeIfAbsent(selectedDate, k -> new HashMap<>()).put(taskName + "_" + calendarID + "_" + calendarNum, taskColor);
+                updateCalendar();
                 sendTaskToServer(selectedDate.toString(), userName, selectedTask, taskColor, taskDetail, calendarID,
                         calendarNum, "add");
             }
@@ -300,11 +286,11 @@ public class CalendarGUIClient extends JFrame {
     }
 
     private void showEditTaskDialog(Map.Entry<String, Color> taskEntry, LocalDate date,
-            Map<String, String[]> detailsMap, Map<String, int[]> taskInt) {
-        String[] detailArray = detailsMap.get(taskEntry.getKey().split("_")[0]);
-        int[] taskID = taskInt.get(taskEntry.getKey().split("_")[0]);
+                                    Map<String, String[]> detailsMap, Map<String, int[]> taskInt) {
+        String[] detailArray = detailsMap.get(taskEntry.getKey());
+        int[] taskID = taskInt.get(taskEntry.getKey());
         if (detailArray == null) {
-            detailArray = new String[] { "不明なユーザー", "詳細なし" };
+            detailArray = new String[]{"不明なユーザー", "詳細なし"};
         }
 
         JTextArea detailsArea = new JTextArea(detailArray[1]);
@@ -321,11 +307,11 @@ public class CalendarGUIClient extends JFrame {
         int action = JOptionPane.showOptionDialog(
                 this,
                 message,
-                "予定の編集: " + taskEntry.getKey().split("_")[0],
+                "予定の編集: " + taskEntry.getKey(),
                 JOptionPane.DEFAULT_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                new String[] { "保存", "削除", "キャンセル", "色変更" },
+                new String[]{"保存", "削除", "キャンセル", "色変更"},
                 "保存");
 
         switch (action) {
@@ -333,58 +319,51 @@ public class CalendarGUIClient extends JFrame {
                 String userName = userNameField.getText().trim();
                 String newTaskName = taskNameField.getText().trim();
                 String newDetails = detailsArea.getText();
-                String[] newDetailArray = new String[] { userName, newDetails };
+                String[] newDetailArray = new String[]{userName, newDetails};
                 int calendarID = taskID[0];
                 int calendarNum = taskID[1];
-                if (!newTaskName.isEmpty() && !newTaskName.equals(taskEntry.getKey().split("_")[0])) {
-                    Color color = scheduleMap.get(date).remove(taskEntry.getKey().split("_")[0]);
-                    // scheduleMap.get(date).put(newTaskName + "_" + calendarID + "_" + calendarNum,
-                    // color);
-                    // detailsMap.remove(taskEntry.getKey().split("_")[0]);
-                    // detailsMap.put(newTaskName + "_" + calendarID + "_" + calendarNum,
-                    // newDetailArray);
-                    // taskInt.remove(taskEntry.getKey().split("_")[0]);
-                    // taskInt.put(newTaskName + "_" + calendarID + "_" + calendarNum, new
-                    // int[]{calendarID, calendarNum});
+                if (!newTaskName.isEmpty() && !newTaskName.equals(taskEntry.getKey())) {
+                    Color color = scheduleMap.get(date).remove(taskEntry.getKey());
+                    scheduleMap.get(date).put(newTaskName + "_" + calendarID + "_" + calendarNum, color);
+                    detailsMap.remove(taskEntry.getKey());
+                    detailsMap.put(newTaskName + "_" + calendarID + "_" + calendarNum, newDetailArray);
+                    taskInt.remove(taskEntry.getKey());
+                    taskInt.put(newTaskName + "_" + calendarID + "_" + calendarNum, new int[]{calendarID, calendarNum});
                     sendTaskToServer(date.toString(), userName, newTaskName, color, newDetails, calendarID, calendarNum,
                             "save");
-                    taskListModel.removeElement(taskEntry.getKey().split("_")[0]);
+                    taskListModel.removeElement(taskEntry.getKey());
                     taskListModel.addElement(newTaskName);
                 } else {
-                    // detailsMap.put(taskEntry.getKey().split("_")[0], newDetailArray);
-                    sendTaskToServer(date.toString(), userName, taskEntry.getKey().split("_")[0], taskEntry.getValue(),
-                            newDetails,
+                    detailsMap.put(taskEntry.getKey(), newDetailArray);
+                    sendTaskToServer(date.toString(), userName, taskEntry.getKey(), taskEntry.getValue(), newDetails,
                             calendarID, calendarNum, "save");
                 }
                 break;
             case 1: // 削除
-                // scheduleMap.get(date).remove(taskEntry.getKey().split("_")[0]);
-                // detailsMap.remove(taskEntry.getKey().split("_")[0]);
-                taskInt.remove(taskEntry.getKey().split("_")[0]);
-                sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey().split("_")[0],
-                        taskEntry.getValue(),
+                scheduleMap.get(date).remove(taskEntry.getKey());
+                detailsMap.remove(taskEntry.getKey());
+                taskInt.remove(taskEntry.getKey());
+                sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey(), taskEntry.getValue(),
                         detailArray[1], taskID[0], taskID[1], "delete");
-                taskListModel.removeElement(taskEntry.getKey().split("_")[0]);
+                taskListModel.removeElement(taskEntry.getKey());
                 break;
             case 2: // キャンセル
                 // 何もしない
                 break;
             case 3: // 色変更
-                Color newColor = JColorChooser.showDialog(this, "色を選択",
-                        scheduleMap.get(date).getOrDefault(taskEntry.getKey().split("_")[0], Color.WHITE));
+                Color newColor = JColorChooser.showDialog(this, "色を選択", scheduleMap.get(date).getOrDefault(taskEntry.getKey(), Color.WHITE));
                 if (newColor != null) {
-                    // scheduleMap.get(date).put(taskEntry.getKey().split("_")[0], newColor);
-                    sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey().split("_")[0], newColor,
-                            detailArray[1],
+                    scheduleMap.get(date).put(taskEntry.getKey(), newColor);
+                    sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey(), newColor, detailArray[1],
                             taskID[0], taskID[1], "change");
                 }
                 break;
         }
-        // updateCalendar();
+        updateCalendar();
     }
 
     private void sendTaskToServer(String date, String name, String task, Color color, String detail, int calendarID,
-            int calendarNum, String method) {
+                                  int calendarNum, String method) {
         try {
             CalendarInput input = new CalendarInput();
             input.setDate(date);
@@ -437,10 +416,9 @@ public class CalendarGUIClient extends JFrame {
                         LocalDate localDate = LocalDate.parse(date);
 
                         scheduleMap.computeIfAbsent(localDate, k -> new HashMap<>()).put(uniqueTaskName, color);
-                        scheduleDetails.computeIfAbsent(localDate, k -> new HashMap<>()).put(task,
-                                new String[] { name, detail });
-                        scheduleID.computeIfAbsent(localDate, k -> new HashMap<>()).put(task,
-                                new int[] { id, num });
+                        scheduleDetails.computeIfAbsent(localDate, k -> new HashMap<>()).put(uniqueTaskName,
+                                new String[]{name, detail});
+                        scheduleID.computeIfAbsent(localDate, k -> new HashMap<>()).put(uniqueTaskName, new int[]{id, num});
                         taskListModel.addElement(task);
                     }
                 }
