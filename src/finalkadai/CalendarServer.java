@@ -5,14 +5,15 @@ import java.io.ObjectOutputStream;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CalendarServer {
 
     private static final List<ObjectOutputStream> clientOutputStreams = new ArrayList<>();
 
     public static void main(String arg[]) {
-        ArrayList<TerminalInput> dataList = new ArrayList<>();
+        ArrayList<CalendarInput> dataList = new ArrayList<>();
         int calendarID = 0;
         System.out.print("ポートを入力してください(5000など) → ");
         int port = 5000;
@@ -38,7 +39,7 @@ public class CalendarServer {
         }
     }
 
-    private static void broadcast(List<TerminalInput> dataList) {
+    private static void broadcast(List<CalendarInput> dataList) {
         synchronized (clientOutputStreams) {
             for (ObjectOutputStream oos : clientOutputStreams) {
                 try {
@@ -53,10 +54,10 @@ public class CalendarServer {
 
     static class ClientHandler extends Thread {
         private Socket socket;
-        private ArrayList<TerminalInput> dataList;
+        private ArrayList<CalendarInput> dataList;
         private ObjectOutputStream oos;
 
-        public ClientHandler(Socket socket, ArrayList<TerminalInput> dataList, ObjectOutputStream oos) {
+        public ClientHandler(Socket socket, ArrayList<CalendarInput> dataList, ObjectOutputStream oos) {
             this.socket = socket;
             this.dataList = dataList;
             this.oos = oos;
@@ -73,7 +74,7 @@ public class CalendarServer {
                 oos.flush();
                 
                 while (true) {
-                    TerminalInput input = (TerminalInput) ois.readObject();
+                    CalendarInput input = (CalendarInput) ois.readObject();
                     String method = input.getMethod();
                     System.out.println("method: " + method);
                     String name = input.getName();

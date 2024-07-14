@@ -7,7 +7,7 @@ import java.net.BindException;
 import java.net.Socket;
 import java.util.Scanner;
 
-import finalkadai.TerminalInput;
+import finalkadai.CalendarInput;
 
 public class TerminalClient {
 
@@ -35,7 +35,7 @@ public class TerminalClient {
                 System.out.println("タスクの色をRGB形式で入力してください (例: 255,255,255):");
                 String[] rgb = scanner.next().split(",");
 
-                TerminalInput input = new TerminalInput();
+                CalendarInput input = new CalendarInput();
                 input.setDate(date);
                 input.setTask(task);
                 input.setRgba(rgb);
@@ -43,7 +43,7 @@ public class TerminalClient {
                 oos.writeObject(input);
                 oos.flush();
 
-                TerminalInput response = (TerminalInput) ois.readObject();
+                CalendarInput response = (CalendarInput) ois.readObject();
 
                 String replyMsg = response.getDate();
                 System.out.println("サーバからのメッセージ: " + replyMsg);

@@ -2,7 +2,7 @@ package finalkadai;
 
 import java.io.Serializable;
 
-public class TerminalInput implements Serializable {
+public class CalendarInput implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

@@ -16,7 +16,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import finalkadai.TerminalInput;
+import finalkadai.CalendarInput;
 
 public class ScheduleBook extends JFrame {
     private final JPanel calendarPanel;
@@ -101,8 +101,8 @@ public class ScheduleBook extends JFrame {
         updateCalendar();
     }
 
-    public void addDataList(ArrayList<TerminalInput> dataList){
-        for (TerminalInput input : dataList) {
+    public void addDataList(ArrayList<CalendarInput> dataList){
+        for (CalendarInput input : dataList) {
             addTask(input.getDate(), input.getTask(), input.getRgba());
         }
     }
