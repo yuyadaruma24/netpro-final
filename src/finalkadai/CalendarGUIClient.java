@@ -422,6 +422,7 @@ public class CalendarGUIClient extends JFrame {
             ois.close();
             oos.close();
             socket.close();
+            System.out.println("接続を終了します。");
         } catch (Exception e) {
             e.printStackTrace();
         }
