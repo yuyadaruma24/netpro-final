@@ -56,23 +56,22 @@ public class CalendarServer {
         private Socket socket;
         private ArrayList<CalendarInput> dataList;
         private ObjectOutputStream oos;
-
+    
         public ClientHandler(Socket socket, ArrayList<CalendarInput> dataList, ObjectOutputStream oos) {
             this.socket = socket;
             this.dataList = dataList;
             this.oos = oos;
         }
-
+    
         @Override
         public void run() {
-            
             try {
                 ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-                
+    
                 // クライアントが接続されたら現在のデータを送信
                 oos.writeObject(new ArrayList<>(dataList));
                 oos.flush();
-                
+    
                 while (true) {
                     CalendarInput input = (CalendarInput) ois.readObject();
                     String method = input.getMethod();
@@ -95,33 +94,53 @@ public class CalendarServer {
                     int num = input.getCalendarNum();
                     System.out.println("ID: " + ID);
                     System.out.println("num: " + num);
-
+    
                     synchronized (dataList) {
+                        boolean isValidRequest = true;
                         if (method.equals("add")) {
                             dataList.add(input);
-                        }else if(method.equals("delete")){
-                            for(int i = 0; i < dataList.size(); i++){
-                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum()) {
+                        } else if (method.equals("delete")) {
+                            boolean found = false;
+                            for (int i = 0; i < dataList.size(); i++) {
+                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum() && name.equals(dataList.get(i).getName())) {
                                     dataList.remove(i);
+                                    found = true;
+                                    break;
                                 }
                             }
-                        }else if(method.equals("save") || method.equals("change")){
-                            for(int i = 0;i < dataList.size(); i++){
-                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum()) {
+                            if (!found) {
+                                isValidRequest = false;
+                            }
+                        } else if (method.equals("save") || method.equals("change")) {
+                            boolean found = false;
+                            for (int i = 0; i < dataList.size(); i++) {
+                                if (ID == dataList.get(i).getCalendarID() && num == dataList.get(i).getCalendarNum() && name.equals(dataList.get(i).getName())) {
                                     dataList.set(i, input);
+                                    found = true;
+                                    break;
                                 }
                             }
-                        }else if(method.equals("exit")){
+                            if (!found) {
+                                isValidRequest = false;
+                            }
+                        } else if (method.equals("exit")) {
                             break;
+                        } else {
+                            isValidRequest = false;
+                        }
+    
+                        if (!isValidRequest) {
+                            CalendarInput errorInput = new CalendarInput();
+                            errorInput.setMethod("error");
+                            errorInput.setDetail("無効なリクエストです。");
+                            oos.writeObject(errorInput);
+                            oos.flush();
+                        } else {
+                            // 新しいデータを全てのクライアントにブロードキャスト
+                            broadcast(dataList);
                         }
                     }
-                    
-                    // 新しいデータを全てのクライアントにブロードキャスト
-                    broadcast(dataList);
                 }
-                //ois.close();
-                //oos.close();
-                //socket.close();
                 System.out.println("close");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -129,4 +148,5 @@ public class CalendarServer {
             }
         }
     }
+    
 }

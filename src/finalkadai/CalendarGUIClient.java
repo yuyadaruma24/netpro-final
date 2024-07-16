@@ -280,8 +280,8 @@ public class CalendarGUIClient extends JFrame {
         }
     }
 
-    private void showEditTaskDialog(Map.Entry<String, Color> taskEntry, LocalDate date,
-                                    Map<String, String[]> detailTask, Map<String, int[]> taskInt) {
+    private void showEditTaskDialog(Map.Entry<String, Color> taskEntry, LocalDate date,Map<String, String[]> detailTask, Map<String, int[]> taskInt) {
+        System.out.println(calendarID);
         String[] detailArray = detailTask.get(taskEntry.getKey());
         int[] taskID = taskInt.get(taskEntry.getKey());
         if (detailArray == null) {
@@ -315,7 +315,7 @@ public class CalendarGUIClient extends JFrame {
                 String newTaskName = taskNameField.getText().trim();
                 String newDetails = detailsArea.getText();
                 //String[] newDetailArray = new String[]{userName, newDetails};
-                int calendarID = taskID[0];
+                //int calendarID = taskID[0];
                 int calendarNum = taskID[1];
                 if (!newTaskName.isEmpty() && !newTaskName.equals(taskEntry.getKey())) {
                     Color color = scheduleMap.get(date).remove(taskEntry.getKey());
@@ -324,13 +324,13 @@ public class CalendarGUIClient extends JFrame {
                     //detailTask.put(newTaskName + "_" + calendarID + "_" + calendarNum, newDetailArray);
                     //taskInt.remove(taskEntry.getKey());
                     //taskInt.put(newTaskName + "_" + calendarID + "_" + calendarNum, new int[]{calendarID, calendarNum});
-                    sendTaskToServer(date.toString(), userName, newTaskName, color, newDetails, calendarID, calendarNum,
+                    sendTaskToServer(date.toString(), userName, newTaskName, color, newDetails.split("_")[0], calendarID, calendarNum,
                             "save");
                     taskListModel.removeElement(taskEntry.getKey());
                     taskListModel.addElement(newTaskName);
                 } else {
                     //detailTask.put(taskEntry.getKey(), newDetailArray);
-                    sendTaskToServer(date.toString(), userName, taskEntry.getKey(), taskEntry.getValue(), newDetails,
+                    sendTaskToServer(date.toString(), userName, taskEntry.getKey().split("_")[0], taskEntry.getValue(), newDetails.split("_")[0],
                             calendarID, calendarNum, "save");
                 }
                 break;
@@ -338,8 +338,8 @@ public class CalendarGUIClient extends JFrame {
                 //scheduleMap.get(date).remove(taskEntry.getKey());
                 //detailTask.remove(taskEntry.getKey());
                 //taskInt.remove(taskEntry.getKey());
-                sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey(), taskEntry.getValue(),
-                        detailArray[1], taskID[0], taskID[1], "delete");
+                sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey().split("_")[0], taskEntry.getValue(),
+                        detailArray[1], calendarID, taskID[1], "delete");
                 taskListModel.removeElement(taskEntry.getKey());
                 break;
             case 2: // キャンセル
@@ -349,8 +349,8 @@ public class CalendarGUIClient extends JFrame {
                 Color newColor = JColorChooser.showDialog(this, "色を選択", scheduleMap.get(date).getOrDefault(taskEntry.getKey(), Color.WHITE));
                 if (newColor != null) {
                     //scheduleMap.get(date).put(taskEntry.getKey(), newColor);
-                    sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey(), newColor, detailArray[1],
-                            taskID[0], taskID[1], "change");
+                    sendTaskToServer(date.toString(), detailArray[0], taskEntry.getKey().split("_")[0], newColor, detailArray[1],
+                            calendarID, taskID[1], "change");
                 }
                 break;
         }
@@ -384,12 +384,20 @@ public class CalendarGUIClient extends JFrame {
         try {
             calendarID = ois.readInt();
             input: while (true) {
-                List<CalendarInput> dataList = (List<CalendarInput>) ois.readObject();
+                Object response = ois.readObject();
+                if (response instanceof CalendarInput) {
+                    CalendarInput input = (CalendarInput) response;
+                    if ("error".equals(input.getMethod())) {
+                        JOptionPane.showMessageDialog(this, input.getDetail(), "エラー", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+                }
+                List<CalendarInput> dataList = (List<CalendarInput>) response;
                 scheduleMap.clear();
                 scheduleDetails.clear();
                 scheduleID.clear();
                 taskListModel.clear();
-
+    
                 for (CalendarInput input : dataList) {
                     String date = input.getDate();
                     String name = input.getName();
@@ -399,16 +407,16 @@ public class CalendarGUIClient extends JFrame {
                     int id = input.getCalendarID();
                     int num = input.getCalendarNum();
                     String uniqueTaskName = task + "_" + id + "_" + num;
-
+    
                     if (input.getMethod().equals("exit")) {
                         break input;
                     }
-
+    
                     if (date != null && task != null && rgba != null) {
                         Color color = new Color(Integer.parseInt(rgba[0]), Integer.parseInt(rgba[1]),
                                 Integer.parseInt(rgba[2]));
                         LocalDate localDate = LocalDate.parse(date);
-
+    
                         scheduleMap.computeIfAbsent(localDate, k -> new HashMap<>()).put(uniqueTaskName, color);
                         scheduleDetails.computeIfAbsent(localDate, k -> new HashMap<>()).put(uniqueTaskName,
                                 new String[]{name, detail});
@@ -422,11 +430,13 @@ public class CalendarGUIClient extends JFrame {
             ois.close();
             oos.close();
             socket.close();
+            
             System.out.println("接続を終了します。");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+    
 
     private void initializeConnection() {
         try {
