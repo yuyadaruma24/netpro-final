@@ -135,10 +135,9 @@ public class CalendarServer {
                             errorInput.setDetail("無効なリクエストです。");
                             oos.writeObject(errorInput);
                             oos.flush();
-                        } else {
+                        } 
                             // 新しいデータを全てのクライアントにブロードキャスト
                             broadcast(dataList);
-                        }
                     }
                 }
                 System.out.println("close");
